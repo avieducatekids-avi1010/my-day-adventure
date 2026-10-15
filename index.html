@@ -182,6 +182,9 @@ let index = 0;
 let wordChoices = [];
 let chosenWords = [];
 let missingIndex = 0;
+let currentMissingPositions = [];
+let currentCorrectLetters = [];
+let currentMissingIndex = 0;
 let feedback = "";
 let feedbackType = "";
 let answered = false;
@@ -303,44 +306,80 @@ function listenNext() {
   }
 }
 
+
 function makeWordTask(item) {
   const word = item.phrase;
-  const vowelPositions = [];
+  const letters = [];
+
   for (let i = 0; i < word.length; i++) {
-    if ("aeiou".includes(word[i])) vowelPositions.push(i);
+    if (/[a-z]/i.test(word[i])) {
+      letters.push(i);
+    }
   }
-  missingIndex = vowelPositions.length ? vowelPositions[index % vowelPositions.length] : 0;
-  const correctLetter = word[missingIndex];
+
+  const missingCount = Math.min(3, Math.max(2, Math.ceil(letters.length * 0.3)));
+  const shuffledPositions = [...letters].sort(() => Math.random() - 0.5);
+  const missingPositions = shuffledPositions.slice(0, missingCount);
+
+  const correctLetters = missingPositions.map(pos => word[pos]);
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
-  const distractors = alphabet.filter(x => x !== correctLetter);
-  const shuffled = distractors.sort(() => Math.random() - 0.5).slice(0, 2);
-  wordChoices = [correctLetter, ...shuffled].sort(() => Math.random() - 0.5);
-  return { word, correctLetter };
+  const distractors = alphabet.filter(letter => !correctLetters.includes(letter));
+
+  wordChoices = [...correctLetters];
+  while (wordChoices.length < missingCount + 3 && distractors.length) {
+    const pick = Math.floor(Math.random() * distractors.length);
+    wordChoices.push(distractors.splice(pick, 1)[0]);
+  }
+
+  wordChoices.sort(() => Math.random() - 0.5);
+
+  return {
+    word,
+    missingPositions,
+    correctLetters
+  };
 }
 
 function renderWord() {
   const item = activities[index];
   const task = makeWordTask(item);
-  const word = task.word;
-  const letters = [...word].map((letter, i) => {
-    if (i === missingIndex) return `<span class="letter missing">?</span>`;
-    if (letter === " ") return `<span style="width:8px"></span>`;
+
+  const pairs = task.missingPositions
+    .map((pos, i) => ({ pos, letter: task.correctLetters[i] }))
+    .sort((a, b) => a.pos - b.pos);
+
+  currentMissingPositions = pairs.map(p => p.pos);
+  currentCorrectLetters = pairs.map(p => p.letter);
+  currentMissingIndex = 0;
+
+  const missingSet = new Set(currentMissingPositions);
+
+  const letters = [...item.phrase].map((letter, i) => {
+    if (letter === " ") {
+      return `<span style="display:inline-block;width:10px"></span>`;
+    }
+    if (missingSet.has(i)) {
+      return `<span class="letter missing" id="blank${i}">?</span>`;
+    }
     return `<span class="letter">${letter}</span>`;
   }).join("");
 
   app.innerHTML = `${levelHeader(activities.length)}
     <div class="hero">
       <div class="illustration">${item.emoji}</div>
-      <p class="hint">Choose the missing letter.</p>
-      <div class="phrase">${letters}</div>
+      <p class="hint">Choose the missing letters.</p>
+      <div class="phrase"><div class="letter-slots">${letters}</div></div>
       <div class="letter-buttons">
-        ${wordChoices.map(letter => `<button class="letter-btn" onclick="checkLetter('${letter}')">${letter}</button>`).join("")}
+        ${wordChoices.map((letter, i) =>
+          `<button class="letter-btn" onclick="checkLetter('${letter}')">${letter}</button>`
+        ).join("")}
       </div>
       <button class="secondary" onclick="speak(itemPhrase())">🔊 Listen</button>
       <div class="feedback" id="feedback">${feedback}</div>
-      <button class="primary big ${answered ? "" : "hidden"}" id="nextButton" onclick="wordNext()">Next ➜</button>
+      <button class="primary big hidden" id="nextButton" onclick="wordNext()">Next ➜</button>
       <button class="secondary big" onclick="showLevels()">Exit level</button>
     </div>`;
+
   speak(item.phrase);
 }
 
@@ -348,21 +387,32 @@ function itemPhrase() { return activities[index].phrase; }
 
 function checkLetter(letter) {
   if (answered) return;
-  if (letter === activities[index].phrase[missingIndex]) {
-    addStar();
-    answered = true;
-    showFeedback("Brilliant! ⭐ Correct!", "good");
-    document.querySelectorAll(".letter-btn").forEach(b => b.disabled = true);
-    document.getElementById("nextButton").classList.remove("hidden");
-    speak(activities[index].phrase);
-    const slots = document.querySelectorAll(".letter");
-    let letterCount = -1;
-    slots.forEach(el => {
-      if (el.classList.contains("missing")) {
-        el.textContent = letter;
-        el.classList.remove("missing");
-      }
-    });
+
+  const expected = currentCorrectLetters[currentMissingIndex];
+
+  if (letter === expected) {
+    const position = currentMissingPositions[currentMissingIndex];
+    const blank = document.getElementById("blank" + position);
+
+    if (blank) {
+      blank.textContent = letter;
+      blank.classList.remove("missing");
+    }
+
+    currentMissingIndex++;
+
+    if (currentMissingIndex >= currentCorrectLetters.length) {
+      answered = true;
+      addStar();
+      showFeedback("Brilliant! ⭐ All letters are correct!", "good");
+
+      document.querySelectorAll(".letter-btn").forEach(b => b.disabled = true);
+      document.getElementById("nextButton").classList.remove("hidden");
+
+      speak(activities[index].phrase);
+    } else {
+      showFeedback("Great! ⭐ Choose the next letter!", "good");
+    }
   } else {
     showFeedback("Try again! 💪", "bad");
   }
