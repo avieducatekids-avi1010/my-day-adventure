@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Day Adventure</title>
+<style>
+:root {
+  --purple: #7357df;
+  --pink: #ff83b5;
+  --yellow: #ffcf56;
+  --blue: #74d5f5;
+  --green: #69d6a0;
+  --ink: #302b54;
+  --paper: #fffdf8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  color: var(--ink);
+  background: linear-gradient(135deg, #e7e4ff, #ffe8f1 55%, #fff3cb);
+}
+button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid #302b54; outline-offset: 3px; }
+.app { width: min(920px, 100%); margin: auto; padding: 20px 16px 40px; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; margin-bottom: 18px;
+}
+.logo { font-size: 15px; font-weight: 900; letter-spacing: .4px; }
+.stars {
+  background: white; padding: 10px 16px; border-radius: 20px;
+  font-weight: 900; box-shadow: 0 4px 0 #e3dafa;
+}
+.panel {
+  background: var(--paper); border: 3px solid white;
+  border-radius: 30px; padding: clamp(20px, 5vw, 42px);
+  box-shadow: 0 12px 0 rgba(83, 62, 145, .12);
+}
+h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1.05; margin: 8px 0 12px; }
+h2 { font-size: clamp(25px, 5vw, 36px); margin: 10px 0 14px; }
+p { line-height: 1.55; }
+.subtitle { font-weight: 800; color: var(--purple); }
+.hero { text-align: center; }
+.hero-art { font-size: clamp(58px, 12vw, 100px); margin: 18px 0; }
+.tagline { color: #716b8b; font-weight: 700; }
+.primary, .secondary, .choice, .tile {
+  border: 0; border-radius: 17px; padding: 14px 20px; font-weight: 900;
+  transition: transform .12s, box-shadow .12s;
+}
+.primary { background: var(--purple); color: white; box-shadow: 0 5px 0 #5038b6; }
+.primary:active, .secondary:active, .choice:active, .tile:active {
+  transform: translateY(2px); box-shadow: none;
+}
+.secondary { background: #eee9ff; color: var(--purple); }
+.big { width: 100%; margin-top: 12px; font-size: 18px; }
+.level-list { display: grid; gap: 12px; margin: 22px 0; }
+.level-card {
+  display: flex; align-items: center; gap: 14px; padding: 16px;
+  border: 2px solid #eee9ff; border-radius: 20px; background: white;
+  text-align: left; width: 100%; color: var(--ink);
+}
+.level-card .icon { font-size: 35px; }
+.level-card strong { display: block; font-size: 17px; }
+.level-card small { display: block; margin-top: 4px; color: #77718f; }
+.level-card.locked { opacity: .55; cursor: not-allowed; }
+.level-card.done { border-color: var(--green); background: #f0fff7; }
+.level-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.progress { height: 10px; background: #eee9ff; border-radius: 20px; overflow: hidden; margin: 15px 0 24px; }
+.progress > div { height: 100%; background: linear-gradient(90deg, var(--pink), var(--purple)); width: 0; transition: width .2s; }
+.counter { color: #81799e; font-weight: 900; font-size: 14px; }
+.illustration { font-size: clamp(65px, 14vw, 105px); margin: 20px 0 12px; }
+.phrase { font-size: clamp(26px, 6vw, 38px); font-weight: 900; margin: 12px 0; }
+.hint { color: #79728e; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 22px; }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+.choice { background: white; color: var(--ink); border: 2px solid #e7e1ff; min-height: 58px; }
+.choice:hover, .tile:hover { border-color: var(--purple); }
+.choice.correct { background: #d8ffeb; border-color: #45c98c; }
+.choice.wrong { background: #ffe1e9; border-color: #ff7e9d; }
+.word-box {
+  background: #f1edff; padding: 16px; border-radius: 18px; margin: 20px 0;
+  min-height: 60px; font-size: 22px; font-weight: 900;
+}
+.letter-slots { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+.letter { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 29px; height: 42px; padding: 0 5px; background: white;
+  border: 2px solid #dcd4ff; border-radius: 9px; }
+.letter.missing { background: #ffe6f0; border-color: var(--pink); }
+.letter-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
+.letter-btn { width: 52px; height: 52px; border: 0; border-radius: 15px; background: var(--yellow); font-size: 22px; font-weight: 900; }
+.digital-clock {
+  display: inline-block; background: #292c47; color: #a8ffcd;
+  font: 900 clamp(30px, 7vw, 48px)/1.3 monospace; letter-spacing: 2px;
+  padding: 16px 23px; border-radius: 18px; margin: 12px 0;
+  box-shadow: inset 0 0 0 3px #474967, 0 5px 0 #d8d2ec;
+}
+.question { font-size: clamp(21px, 4vw, 29px); font-weight: 900; margin: 18px 0 8px; }
+.sentence-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 60px; margin: 20px 0; }
+.tile { background: #e6f7ff; border: 2px solid #bdeaff; color: #25526a; padding: 12px 14px; }
+.tile.placed { background: #e9e2ff; border-color: #c6b8ff; color: var(--ink); }
+.feedback { min-height: 30px; font-weight: 900; text-align: center; margin-top: 15px; }
+.feedback.good { color: #148753; }
+.feedback.bad { color: #d34e72; }
+.hidden { display: none !important; }
+.result { text-align: center; }
+.result .trophy { font-size: 100px; }
+.footer { text-align: center; margin-top: 22px; color: #77718f; font-size: 13px; }
+@media(max-width: 500px) {
+  .app { padding: 12px 10px 28px; }
+  .panel { border-radius: 23px; padding: 21px 16px; }
+  .choices { grid-template-columns: 1fr; }
+  .level-card { padding: 13px; }
+  .topbar { align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">🌈 MY DAY ADVENTURE</div>
+    <div class="stars">⭐ <span id="starCount">0</span></div>
+  </div>
+
+  <main class="panel" id="app"></main>
+  <div class="footer">Super Minds 2 · Unit 1 · Listen · Learn · Play · Shine!</div>
+</div>
+
+<script>
+const activities = [
+  { phrase: "get up", emoji: "🌞🛏️" },
+  { phrase: "get dressed", emoji: "👕👖" },
+  { phrase: "have breakfast", emoji: "🥣🥛" },
+  { phrase: "brush your teeth", emoji: "🪥😁" },
+  { phrase: "go to school", emoji: "🎒🏫" },
+  { phrase: "have lunch", emoji: "🥪🍎" },
+  { phrase: "play in the park", emoji: "🛝🌳" },
+  { phrase: "have dinner", emoji: "🍝🍽️" },
+  { phrase: "go to bed", emoji: "🌙🛌" }
+];
+
+const timeTasks = [
+  {
+    time: "07:00 AM", question: "What time do you get up?",
+    answers: ["At seven o'clock.", "At nine o'clock.", "At twelve o'clock."], correct: 0
+  },
+  {
+    time: "08:00 AM", question: "What time do you have breakfast?",
+    answers: ["At ten o'clock.", "At eight o'clock.", "At six o'clock."], correct: 1
+  },
+  {
+    time: "09:00 AM", question: "What time do you go to school?",
+    answers: ["At seven o'clock.", "At twelve o'clock.", "At nine o'clock."], correct: 2
+  },
+  {
+    time: "12:00 PM", question: "What time is it?",
+    answers: ["It's twelve o'clock.", "It's three o'clock.", "It's eight o'clock."], correct: 0
+  },
+  {
+    time: "09:00 PM", question: "What time do you go to bed?",
+    answers: ["At five o'clock.", "At nine o'clock.", "At seven o'clock."], correct: 1
+  }
+];
+
+const sentenceTasks = [
+  { words: ["up", "I", "get", "at seven o'clock"], answer: "I get up at seven o'clock." },
+  { words: ["breakfast", "I", "have", "at eight o'clock"], answer: "I have breakfast at eight o'clock." },
+  { words: ["school", "I", "go", "to", "at nine o'clock"], answer: "I go to school at nine o'clock." },
+  { words: ["brush", "I", "my teeth", "at seven o'clock"], answer: "I brush my teeth at seven o'clock." },
+  { words: ["bed", "I", "go", "to", "at nine o'clock"], answer: "I go to bed at nine o'clock." }
+];
+
+const levelNames = ["Listen & Learn", "Word Challenge", "Time Mission", "Sentence Quest"];
+const levelIcons = ["🎧", "🔤", "⏰", "🧩"];
+let stars = 0;
+let unlocked = 0;
+let completed = [false, false, false, false];
+let level = 0;
+let index = 0;
+let wordChoices = [];
+let chosenWords = [];
+let missingIndex = 0;
+let feedback = "";
+let feedbackType = "";
+let answered = false;
+let attempts = 0;
+
+const app = document.getElementById("app");
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) {
+    showFeedback("Audio is not supported in this browser.", "bad");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-GB";
+  utterance.rate = 0.82;
+  window.speechSynthesis.speak(utterance);
+}
+
+function updateStars() {
+  document.getElementById("starCount").textContent = stars;
+}
+
+function showFeedback(text, type = "") {
+  const el = document.getElementById("feedback");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "feedback " + type;
+}
+
+function addStar() {
+  stars++;
+  updateStars();
+}
+
+function home() {
+  window.speechSynthesis?.cancel();
+  app.innerHTML = `
+    <section class="hero">
+      <div class="hero-art">🌞 🎒 🦊</div>
+      <div class="subtitle">SUPER MINDS 2 · UNIT 1</div>
+      <h1>My Day<br>Adventure!</h1>
+      <p class="tagline">Listen · Learn · Play · Shine!</p>
+      <p>Join the adventure and learn about your day in English.</p>
+      <button class="primary big" onclick="showLevels()">LET'S PLAY! 🚀</button>
+    </section>`;
+}
+
+function showLevels() {
+  let cards = levelNames.map((name, i) => {
+    const isLocked = i > unlocked;
+    return `<button class="level-card ${isLocked ? "locked" : ""} ${completed[i] ? "done" : ""}"
+      ${isLocked ? "disabled" : `onclick="startLevel(${i})"`}>
+      <span class="icon">${levelIcons[i]}</span>
+      <span><strong>${i + 1}. ${name} ${completed[i] ? "⭐" : ""}</strong>
+      <small>${[
+        "Listen to all 9 daily routines",
+        "Complete the missing letters",
+        "Read digital clocks and choose answers",
+        "Build 5 sentences"
+      ][i]}${isLocked ? " · 🔒 Complete the previous level first" : ""}</small></span>
+    </button>`;
+  }).join("");
+
+  app.innerHTML = `
+    <div class="level-head"><h2>Choose your mission! 🗺️</h2>
+    <span class="counter">⭐ ${stars}</span></div>
+    <p>Complete each level to unlock the next one.</p>
+    <div class="level-list">${cards}</div>
+    ${completed.every(Boolean) ? `<button class="primary big" onclick="finishGame()">🏆 See my result!</button>` : ""}
+    <button class="secondary big" onclick="home()">← Home</button>`;
+}
+
+function startLevel(n) {
+  if (n > unlocked) return;
+  level = n;
+  index = 0;
+  attempts = 0;
+  feedback = "";
+  feedbackType = "";
+  answered = false;
+  chosenWords = [];
+  if (level === 0) renderListen();
+  if (level === 1) renderWord();
+  if (level === 2) renderTime();
+  if (level === 3) renderSentence();
+}
+
+function levelHeader(total) {
+  const name = levelNames[level];
+  return `<div class="level-head"><span class="subtitle">${levelIcons[level]} ${name}</span>
+    <span class="counter">${index + 1} / ${total}</span></div>
+    <div class="progress"><div style="width:${(index / total) * 100}%"></div></div>`;
+}
+
+function renderListen() {
+  const item = activities[index];
+  app.innerHTML = `${levelHeader(activities.length)}
+    <div class="hero">
+      <div class="illustration">${item.emoji}</div>
+      <div class="phrase">${item.phrase}</div>
+      <p class="hint">Listen and repeat!</p>
+      <button class="secondary" onclick="speak('${item.phrase}')">🔊 Listen again</button>
+      <div class="feedback" id="feedback">${feedback}</div>
+      <button class="primary big" onclick="listenNext()">I learned it! ⭐</button>
+      <button class="secondary big" onclick="showLevels()">Exit level</button>
+    </div>`;
+  speak(item.phrase);
+}
+
+function listenNext() {
+  addStar();
+  if (index < activities.length - 1) {
+    index++;
+    feedback = "";
+    renderListen();
+  } else {
+    finishLevel();
+  }
+}
+
+function makeWordTask(item) {
+  const word = item.phrase;
+  const vowelPositions = [];
+  for (let i = 0; i < word.length; i++) {
+    if ("aeiou".includes(word[i])) vowelPositions.push(i);
+  }
+  missingIndex = vowelPositions.length ? vowelPositions[index % vowelPositions.length] : 0;
+  const correctLetter = word[missingIndex];
+  const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+  const distractors = alphabet.filter(x => x !== correctLetter);
+  const shuffled = distractors.sort(() => Math.random() - 0.5).slice(0, 2);
+  wordChoices = [correctLetter, ...shuffled].sort(() => Math.random() - 0.5);
+  return { word, correctLetter };
+}
+
+function renderWord() {
+  const item = activities[index];
+  const task = makeWordTask(item);
+  const word = task.word;
+  const letters = [...word].map((letter, i) => {
+    if (i === missingIndex) return `<span class="letter missing">?</span>`;
+    if (letter === " ") return `<span style="width:8px"></span>`;
+    return `<span class="letter">${letter}</span>`;
+  }).join("");
+
+  app.innerHTML = `${levelHeader(activities.length)}
+    <div class="hero">
+      <div class="illustration">${item.emoji}</div>
+      <p class="hint">Choose the missing letter.</p>
+      <div class="phrase">${letters}</div>
+      <div class="letter-buttons">
+        ${wordChoices.map(letter => `<button class="letter-btn" onclick="checkLetter('${letter}')">${letter}</button>`).join("")}
+      </div>
+      <button class="secondary" onclick="speak(itemPhrase())">🔊 Listen</button>
+      <div class="feedback" id="feedback">${feedback}</div>
+      <button class="primary big ${answered ? "" : "hidden"}" id="nextButton" onclick="wordNext()">Next ➜</button>
+      <button class="secondary big" onclick="showLevels()">Exit level</button>
+    </div>`;
+  speak(item.phrase);
+}
+
+function itemPhrase() { return activities[index].phrase; }
+
+function checkLetter(letter) {
+  if (answered) return;
+  if (letter === activities[index].phrase[missingIndex]) {
+    addStar();
+    answered = true;
+    showFeedback("Brilliant! ⭐ Correct!", "good");
+    document.querySelectorAll(".letter-btn").forEach(b => b.disabled = true);
+    document.getElementById("nextButton").classList.remove("hidden");
+    speak(activities[index].phrase);
+    const slots = document.querySelectorAll(".letter");
+    let letterCount = -1;
+    slots.forEach(el => {
+      if (el.classList.contains("missing")) {
+        el.textContent = letter;
+        el.classList.remove("missing");
+      }
+    });
+  } else {
+    showFeedback("Try again! 💪", "bad");
+  }
+}
+
+function wordNext() {
+  if (index < activities.length - 1) {
+    index++;
+    answered = false;
+    feedback = "";
+    renderWord();
+  } else finishLevel();
+}
+
+function renderTime() {
+  const task = timeTasks[index];
+  app.innerHTML = `${levelHeader(timeTasks.length)}
+    <div class="hero">
+      <p class="hint">Look at the digital clock!</p>
+      <div class="digital-clock">${task.time}</div>
+      <div class="question">${task.question}</div>
+      <button class="secondary" onclick="speak('${task.question}')">🔊 Listen to the question</button>
+      <div class="choices">
+        ${task.answers.map((a, i) => `<button class="choice" onclick="checkTime(${i})">${a}</button>`).join("")}
+      </div>
+      <div class="feedback" id="feedback">${feedback}</div>
+      <button class="primary big ${answered ? "" : "hidden"}" id="nextButton" onclick="timeNext()">Next ➜</button>
+      <button class="secondary big" onclick="showLevels()">Exit level</button>
+    </div>`;
+  speak(task.question);
+}
+
+function checkTime(choice) {
+  if (answered) return;
+  if (choice === timeTasks[index].correct) {
+    answered = true;
+    addStar();
+    showFeedback("Excellent! ⭐ That's right!", "good");
+    document.querySelectorAll(".choice").forEach((b, i) => {
+      b.disabled = true;
+      if (i === choice) b.classList.add("correct");
+    });
+    document.getElementById("nextButton").classList.remove("hidden");
+    speak(timeTasks[index].answers[choice]);
+  } else {
+    document.querySelectorAll(".choice")[choice].classList.add("wrong");
+    showFeedback("Not quite. Try again! 💛", "bad");
+  }
+}
+
+function timeNext() {
+  if (index < timeTasks.length - 1) {
+    index++;
+    answered = false;
+    feedback = "";
+    renderTime();
+  } else finishLevel();
+}
+
+function renderSentence() {
+  const task = sentenceTasks[index];
+  wordChoices = task.words.map((word, i) => ({ word, id: i })).sort(() => Math.random() - 0.5);
+  chosenWords = [];
+  app.innerHTML = `${levelHeader(sentenceTasks.length)}
+    <div class="hero">
+      <div class="illustration">🧩✏️</div>
+      <p class="hint">Tap the words in the correct order.</p>
+      <div class="sentence-area" id="answerArea"></div>
+      <div class="sentence-area" id="wordArea">
+        ${wordChoices.map(item => `<button class="tile" id="tile${item.id}" onclick="pickWord(${item.id})">${item.word}</button>`).join("")}
+      </div>
+      <div class="row">
+        <button class="secondary" onclick="undoWord()">↩ Undo</button>
+        <button class="secondary" onclick="speak('${task.answer}')">🔊 Listen</button>
+        <button class="secondary" onclick="resetWords()">Reset</button>
+      </div>
+      <div class="feedback" id="feedback">${feedback}</div>
+      <button class="primary big" onclick="checkSentence()">Check answer ✓</button>
+      <button class="primary big ${answered ? "" : "hidden"}" id="nextButton" onclick="sentenceNext()">Next ➜</button>
+      <button class="secondary big" onclick="showLevels()">Exit level</button>
+    </div>`;
+}
+
+function pickWord(id) {
+  if (answered || chosenWords.some(w => w.id === id)) return;
+  chosenWords.push(wordChoices.find(w => w.id === id));
+  drawSentence();
+}
+
+function drawSentence() {
+  const area = document.getElementById("answerArea");
+  area.innerHTML = chosenWords.map(w => `<button class="tile placed" onclick="removeWord(${w.id})">${w.word}</button>`).join("");
+  wordChoices.forEach(w => {
+    const btn = document.getElementById("tile" + w.id);
+    if (btn) btn.classList.toggle("hidden", chosenWords.some(c => c.id === w.id));
+  });
+}
+
+function removeWord(id) {
+  if (answered) return;
+  chosenWords = chosenWords.filter(w => w.id !== id);
+  drawSentence();
+}
+
+function undoWord() {
+  if (!chosenWords.length || answered) return;
+  chosenWords.pop();
+  drawSentence();
+}
+
+function resetWords() {
+  if (answered) return;
+  chosenWords = [];
+  drawSentence();
+}
+
+function checkSentence() {
+  if (answered) return;
+  const result = chosenWords.map(w => w.word).join(" ") + ".";
+  if (result.toLowerCase() === sentenceTasks[index].answer.toLowerCase()) {
+    answered = true;
+    addStar();
+    showFeedback("Perfect sentence! ⭐", "good");
+    document.getElementById("nextButton").classList.remove("hidden");
+    speak(sentenceTasks[index].answer);
+  } else {
+    showFeedback("Almost! Change the word order and try again.", "bad");
+  }
+}
+
+function sentenceNext() {
+  if (index < sentenceTasks.length - 1) {
+    index++;
+    answered = false;
+    feedback = "";
+    renderSentence();
+  } else finishLevel();
+}
+
+function finishLevel() {
+  completed[level] = true;
+  unlocked = Math.max(unlocked, Math.min(level + 1, 3));
+  const earned = level === 0 ? 9 : level === 1 ? 9 : 5;
+  app.innerHTML = `
+    <section class="result">
+      <div class="trophy">🎉🏆</div>
+      <h2>Level complete!</h2>
+      <p>You did an amazing job!</p>
+      <div class="phrase">⭐ ${stars} stars</div>
+      <p>${level < 3 ? "Your next adventure is ready to unlock!" : "You've completed all four levels!"}</p>
+      <button class="primary big" onclick="${level < 3 ? `startLevel(${level + 1})` : "finishGame()"}">${level < 3 ? "Next level ➜" : "See my result 🏆"}</button>
+      <button class="secondary big" onclick="showLevels()">Choose a level</button>
+    </section>`;
+}
+
+function finishGame() {
+  app.innerHTML = `
+    <section class="result">
+      <div class="trophy">🏆🌈🎉</div>
+      <h1>Adventure complete!</h1>
+      <p class="subtitle">You're a My Day Champion!</p>
+      <div class="phrase">⭐ ${stars} stars</div>
+      <p>You listened, learned, told the time and built sentences in English!</p>
+      <button class="primary big" onclick="home()">Play again 🔁</button>
+      <button class="secondary big" onclick="showLevels()">Review levels</button>
+    </section>`;
+}
+
+home();
+</script>
+</body>
+</html>
